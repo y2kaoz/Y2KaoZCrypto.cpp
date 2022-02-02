@@ -1,0 +1,20 @@
+find_library(LIB_@PROJECT_NAME@_SHARED "lib@PROJECT_NAME@-@PROJECT_VERSION@.so" "./lib/")
+find_library(LIB_@PROJECT_NAME@_SHARED_DEBUG "lib@PROJECT_NAME@Debug-@PROJECT_VERSION@.so" "./lib/")
+
+find_library(LIB_@PROJECT_NAME@_STATIC "lib@PROJECT_NAME@-@PROJECT_VERSION@.a" "./lib/")
+find_library(LIB_@PROJECT_NAME@_STATIC_DEBUG "lib@PROJECT_NAME@Debug-@PROJECT_VERSION@.a" "./lib/")
+
+add_library(@PROJECT_NAME@Shared INTERFACE)
+target_include_directories(@PROJECT_NAME@Shared INTERFACE "./include")
+target_link_libraries(@PROJECT_NAME@Shared INTERFACE 
+    optimized ${LIB_@PROJECT_NAME@_SHARED}
+    debug ${LIB_@PROJECT_NAME@_SHARED_DEBUG}
+)
+
+add_library(@PROJECT_NAME@Static INTERFACE)
+target_include_directories(@PROJECT_NAME@Static INTERFACE "./include")
+target_link_libraries(@PROJECT_NAME@Static INTERFACE 
+    optimized ${LIB_@PROJECT_NAME@_STATIC}
+    debug ${LIB_@PROJECT_NAME@_STATIC_DEBUG}
+)
+
