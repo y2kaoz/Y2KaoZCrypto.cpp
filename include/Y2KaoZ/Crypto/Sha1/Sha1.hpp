@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Y2KaoZ/Crypto/Visibility.hpp"
 #include <memory>
 #include <openssl/evp.h>
 #include <span>
@@ -7,7 +8,7 @@
 
 namespace Y2KaoZ::Crypto::Sha1 {
 
-class Sha1 {
+class Y2KAOZCRYPTO_EXPORT Sha1 {
 public:
   static const std::size_t CHECKSUM_SIZE = 20;
   auto update(const std::byte* message, std::size_t length) -> Sha1&;

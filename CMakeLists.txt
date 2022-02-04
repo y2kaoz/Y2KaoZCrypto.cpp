@@ -1,62 +1,58 @@
 cmake_minimum_required(VERSION 3.22)
-
-project(Y2KaoZCrypto VERSION 0.0.0.0)
+project(Y2KaoZCrypto VERSION 0.0.0.0 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
-find_package(OpenSSL 
-    REQUIRED COMPONENTS 
-        Crypto
+if(NOT APPLE)
+    set(CMAKE_INSTALL_RPATH $ORIGIN)
+endif()
+
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+
+if (NOT TARGET Y2KaoZNumeric)
+  message("-- Y2KaoZNumeric not found, adding it as an external dependency")
+  add_subdirectory("./extern/Y2KaoZNumeric/")
+endif ()
+
+add_library(${PROJECT_NAME} 
+    "include/Y2KaoZ/Crypto/Random/SecureRandom.hpp"
+    "src/Y2KaoZ/Crypto/Random/SecureRandom.cpp"
+    "include/Y2KaoZ/Crypto/Sha1/Sha1.hpp"
+    "src/Y2KaoZ/Crypto/Sha1/Sha1.cpp"
 )
-
-add_subdirectory("src/Y2KaoZ/Crypto/Sha1")
-
-add_library(${PROJECT_NAME}Shared SHARED $<TARGET_OBJECTS:Sha1Optimized>)
-target_include_directories(${PROJECT_NAME}Shared PUBLIC "./src/")
-install(TARGETS ${PROJECT_NAME}Shared DESTINATION "lib")
-set_target_properties(${PROJECT_NAME}Shared
-    PROPERTIES
-    OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
 )
-
-add_library(${PROJECT_NAME}SharedDebug SHARED $<TARGET_OBJECTS:Sha1Debug>)
-target_include_directories(${PROJECT_NAME}SharedDebug PUBLIC "./src/")
-install(TARGETS ${PROJECT_NAME}SharedDebug DESTINATION "lib")
-set_target_properties(${PROJECT_NAME}SharedDebug
-    PROPERTIES
-    OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}_d"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
+target_include_directories(${PROJECT_NAME} PUBLIC 
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_BINARY_DIR}/include"
 )
+target_link_libraries(${PROJECT_NAME} PRIVATE Y2KaoZNumeric OpenSSL::Crypto)
 
-add_library(${PROJECT_NAME}Static STATIC $<TARGET_OBJECTS:Sha1Optimized>)
-target_include_directories(${PROJECT_NAME}Static PUBLIC "./src/")
-install(TARGETS ${PROJECT_NAME}Static DESTINATION "lib")
-set_target_properties(${PROJECT_NAME}Static
-    PROPERTIES
-    OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
+include(GenerateExportHeader)
+generate_export_header(${PROJECT_NAME} EXPORT_FILE_NAME "include/Y2KaoZ/Crypto/Visibility.hpp")
+
+include(GNUInstallDirs)
+install(TARGETS ${PROJECT_NAME} 
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" "${CMAKE_CURRENT_BINARY_DIR}/include/" TYPE INCLUDE)
 
-add_library(${PROJECT_NAME}StaticDebug STATIC $<TARGET_OBJECTS:Sha1Debug>)
-target_include_directories(${PROJECT_NAME}StaticDebug PUBLIC "./src/")
-install(TARGETS ${PROJECT_NAME}StaticDebug DESTINATION "lib")
-set_target_properties(${PROJECT_NAME}StaticDebug
-    PROPERTIES
-    OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}_d"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
 )
-
-configure_file(CMakeLists.txt.in "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/CMakeLists.txt" @ONLY)
 
 add_subdirectory("./tests")
