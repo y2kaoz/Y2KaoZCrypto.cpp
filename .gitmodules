@@ -1,0 +1,3 @@
+[submodule "extern/Y2KaoZNumeric"]
+	path = extern/Y2KaoZNumeric
+	url = https://github.com/y2kaoz/Y2KaoZNumeric.cpp.git
