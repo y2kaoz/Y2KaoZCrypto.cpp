@@ -26,6 +26,7 @@ add_library(${PROJECT_NAME}
     "include/Y2KaoZ/Crypto/Srp6/Srp6Math.hpp"
     "src/Y2KaoZ/Crypto/Srp6/Srp6Math.cpp"
 )
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wconversion)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
