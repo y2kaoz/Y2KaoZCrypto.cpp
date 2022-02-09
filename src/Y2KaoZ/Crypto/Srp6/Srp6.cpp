@@ -1,10 +1,10 @@
-#include "Y2KaoZ/Crypto/Srp6/Srp6Math.hpp"
+#include "Y2KaoZ/Crypto/Srp6/Srp6.hpp"
 #include "Y2KaoZ/Crypto/Sha1/Sha1.hpp"
 #include "Y2KaoZ/Numeric/BigInt/BigInt.hpp"
 
 namespace {
 
-using BigInt = Y2KaoZ::Crypto::Srp6::Srp6Math::BigInt;
+using BigInt = Y2KaoZ::Crypto::Srp6::BigInt;
 using Y2KaoZ::Crypto::Sha1::Sha1;
 using Y2KaoZ::Numeric::BigInt::byteBuffer;
 using Y2KaoZ::Numeric::BigInt::fromBuffer;
@@ -36,27 +36,27 @@ using Y2KaoZ::Numeric::BigInt::byteBuffer;
 using Y2KaoZ::Numeric::BigInt::fromBuffer;
 using Y2KaoZ::Numeric::BigInt::powm;
 
-Srp6Math::Srp6Math(BigInt safePrime, BigInt generatorModulo, bool usesSRP6a)
+Srp6::Srp6(BigInt safePrime, BigInt generatorModulo, bool usesSRP6a)
   : safePrime_(std::move(safePrime))
   , generatorModulo_(std::move(generatorModulo))
   , multiplierParameter_(calcMultiplierParameter(usesSRP6a, safePrime_, generatorModulo_))
   , gNxor_(calcGNxor(safePrime_, generatorModulo_)) {
 }
 
-auto Srp6Math::safePrime() const noexcept -> const BigInt& {
+auto Srp6::safePrime() const noexcept -> const BigInt& {
   return safePrime_;
 }
-auto Srp6Math::generatorModulo() const noexcept -> const BigInt& {
+auto Srp6::generatorModulo() const noexcept -> const BigInt& {
   return generatorModulo_;
 }
-auto Srp6Math::multiplierParameter() const noexcept -> const BigInt& {
+auto Srp6::multiplierParameter() const noexcept -> const BigInt& {
   return multiplierParameter_;
 }
-auto Srp6Math::gNxor() const noexcept -> const BigInt& {
+auto Srp6::gNxor() const noexcept -> const BigInt& {
   return gNxor_;
 }
 
-auto Srp6Math::calcPrivateKey(const BigInt& salt, const std::string& username, const std::string& password) const
+auto calcPrivateKey(const Srp6& /*srp6*/, const BigInt& salt, const std::string& username, const std::string& password)
   -> BigInt {
   // x = hash(salt || hash(username || ":" || password))
   Sha1 sha1;
@@ -65,63 +65,68 @@ auto Srp6Math::calcPrivateKey(const BigInt& salt, const std::string& username, c
   return fromBuffer(outerBytes);
 }
 
-auto Srp6Math::calcPasswordVerifier(const BigInt& privateKey) const -> BigInt {
-  return powm(generatorModulo_, privateKey, safePrime_);
+auto calcPasswordVerifier(const Srp6& srp6, const BigInt& privateKey) -> BigInt {
+  return powm(srp6.generatorModulo(), privateKey, srp6.safePrime());
 }
 
-auto Srp6Math::validatePublicEphemeralValue(const BigInt& publicEphemeralValue) const -> bool {
-  return (publicEphemeralValue % safePrime_ != 0);
+auto validatePublicEphemeralValue(const Srp6& srp6, const BigInt& publicEphemeralValue) -> bool {
+  return (publicEphemeralValue % srp6.safePrime() != 0);
 }
 
-auto Srp6Math::calcPublicEphemeralValueA(const BigInt& secretEphemeralValueA) const -> BigInt {
-  auto A = powm(generatorModulo_, secretEphemeralValueA, safePrime_);
-  if (!validatePublicEphemeralValue(A)) {
+auto calcPublicEphemeralValueA(const Srp6& srp6, const BigInt& secretEphemeralValueA) -> BigInt {
+  auto A = powm(srp6.generatorModulo(), secretEphemeralValueA, srp6.safePrime());
+  if (!validatePublicEphemeralValue(srp6, A)) {
     throw std::runtime_error("Invalid Public Ephemeral Value A");
   }
   return A;
 }
 
-auto Srp6Math::calcPublicEphemeralValueB(const BigInt& passwordVerifier, const BigInt& secretEphemeralValueB) const
+auto calcPublicEphemeralValueB(const Srp6& srp6, const BigInt& passwordVerifier, const BigInt& secretEphemeralValueB)
   -> BigInt {
-  auto gbN = powm(generatorModulo_, secretEphemeralValueB, safePrime_);
-  auto B = (multiplierParameter_ * passwordVerifier + gbN) % safePrime_;
-  if (!validatePublicEphemeralValue(B)) {
+  auto gbN = powm(srp6.generatorModulo(), secretEphemeralValueB, srp6.safePrime());
+  auto B = (srp6.multiplierParameter() * passwordVerifier + gbN) % srp6.safePrime();
+  if (!validatePublicEphemeralValue(srp6, B)) {
     throw std::runtime_error("Invalid Public Ephemeral Value B");
   }
   return B;
 }
 
-auto Srp6Math::calcRandomScramblingParameter(const BigInt& publicEphemeralValueA, const BigInt& publicEphemeralValueB)
-  const -> BigInt {
+auto calcRandomScramblingParameter(
+  const Srp6& /*srp6*/,
+  const BigInt& publicEphemeralValueA,
+  const BigInt& publicEphemeralValueB) -> BigInt {
   return fromBuffer(
     Sha1{}.update(byteBuffer(publicEphemeralValueA)).update(byteBuffer(publicEphemeralValueB)).finalize());
 }
 
-auto Srp6Math::calcClientSessionKey(
+auto calcClientSessionKey(
+  const Srp6& srp6,
   const BigInt& publicEphemeralValueB,
   const BigInt& privateKey,
   const BigInt& secretEphemeralValueA,
-  const BigInt& randomScramblingParameter) const -> BigInt {
-  const BigInt base = publicEphemeralValueB - multiplierParameter_ * powm(generatorModulo_, privateKey, safePrime_);
+  const BigInt& randomScramblingParameter) -> BigInt {
+  const BigInt base =
+    publicEphemeralValueB - srp6.multiplierParameter() * powm(srp6.generatorModulo(), privateKey, srp6.safePrime());
   const BigInt exponent = secretEphemeralValueA + randomScramblingParameter * privateKey;
-  return powm(base, exponent, safePrime_);
+  return powm(base, exponent, srp6.safePrime());
 }
 
-auto Srp6Math::calcServerSessionKey(
+auto calcServerSessionKey(
+  const Srp6& srp6,
   const BigInt& publicEphemeralValueA,
   const BigInt& passwordVerifier,
   const BigInt& randomScramblingParameter,
-  const BigInt& secretEphemeralValueB) const -> BigInt {
+  const BigInt& secretEphemeralValueB) -> BigInt {
   // S = (Av^u) ^ b
-  const BigInt base = publicEphemeralValueA * powm(passwordVerifier, randomScramblingParameter, safePrime_);
-  return powm(base, secretEphemeralValueB, safePrime_);
+  const BigInt base = publicEphemeralValueA * powm(passwordVerifier, randomScramblingParameter, srp6.safePrime());
+  return powm(base, secretEphemeralValueB, srp6.safePrime());
 }
 
-auto Srp6Math::calcHashedKey(const BigInt& sessionKey) const -> BigInt {
+auto calcHashedKey(const Srp6& /*srp6*/, const BigInt& sessionKey) -> BigInt {
   return fromBuffer(Sha1{}.update(byteBuffer(sessionKey)).finalize());
 }
 
-auto Srp6Math::calcInterleavedKey(const BigInt& serverSessionKey) const -> BigInt {
+auto calcInterleavedKey(const Srp6& /*srp6*/, const BigInt& serverSessionKey) -> BigInt {
   auto bytesSessionKey = byteBuffer(serverSessionKey);
   constexpr auto requiredLength = 32U;
   if (bytesSessionKey.size() != requiredLength) {
@@ -165,16 +170,17 @@ auto Srp6Math::calcInterleavedKey(const BigInt& serverSessionKey) const -> BigIn
   return fromBuffer(key);
 }
 
-auto Srp6Math::calcClientKeyMatchProof(
+auto calcClientKeyMatchProof(
+  const Srp6& srp6,
   const std::string& username,
   const BigInt& salt,
   const BigInt& publicEphemeralValueA,
   const BigInt& publicEphemeralValueB,
-  const BigInt& key) const -> BigInt {
+  const BigInt& key) -> BigInt {
   // M = H(H(N) xor H(g), H(I), s, A, B, K)
   Sha1 sha1;
   auto hashedI = sha1.update(username).finalize();
-  sha1.update(byteBuffer(gNxor_));
+  sha1.update(byteBuffer(srp6.gNxor()));
   sha1.update(hashedI);
   sha1.update(byteBuffer(salt));
   sha1.update(byteBuffer(publicEphemeralValueA));
@@ -183,10 +189,11 @@ auto Srp6Math::calcClientKeyMatchProof(
   return fromBuffer(sha1.finalize());
 }
 
-auto Srp6Math::calcServerKeyMatchProof(
+auto calcServerKeyMatchProof(
+  const Srp6& /*srp6*/,
   const BigInt& publicEphemeralValueA,
   const BigInt& clientKeyMatchProof,
-  const BigInt& key) const -> BigInt {
+  const BigInt& key) -> BigInt {
   // M = H(A, M, K)
   Sha1 sha1;
   sha1.update(byteBuffer(publicEphemeralValueA));

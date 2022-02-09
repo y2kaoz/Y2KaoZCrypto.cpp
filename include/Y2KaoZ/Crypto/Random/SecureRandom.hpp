@@ -5,15 +5,10 @@
 
 namespace Y2KaoZ::Crypto::Random {
 
-class Y2KAOZCRYPTO_EXPORT SecureRandom {
-public:
-  using BigInt = Y2KaoZ::Numeric::BigInt::BigInt;
+// Generates secure pseudo random bytes for public use
+Y2KAOZCRYPTO_EXPORT auto PublicSecureRandom(const std::size_t& bytes) -> Y2KaoZ::Numeric::BigInt::BigInt;
 
-  // Generates secure pseudo random bytes for public use
-  static auto generatePublic(const std::size_t& bytes) -> BigInt;
-
-  // Generates secure pseudo random bytes that should remain private
-  static auto generateSecret(const std::size_t& bytes) -> BigInt;
-};
+// Generates secure pseudo random bytes that should remain private
+Y2KAOZCRYPTO_EXPORT auto SecretSecureRandom(const std::size_t& bytes) -> Y2KaoZ::Numeric::BigInt::BigInt;
 
 } // namespace Y2KaoZ::Crypto::Random

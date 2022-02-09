@@ -23,8 +23,8 @@ add_library(${PROJECT_NAME}
     "src/Y2KaoZ/Crypto/Random/SecureRandom.cpp"
     "include/Y2KaoZ/Crypto/Sha1/Sha1.hpp"
     "src/Y2KaoZ/Crypto/Sha1/Sha1.cpp"
-    "include/Y2KaoZ/Crypto/Srp6/Srp6Math.hpp"
-    "src/Y2KaoZ/Crypto/Srp6/Srp6Math.cpp"
+    "include/Y2KaoZ/Crypto/Srp6/Srp6.hpp"
+    "src/Y2KaoZ/Crypto/Srp6/Srp6.cpp"
 )
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wconversion)
 

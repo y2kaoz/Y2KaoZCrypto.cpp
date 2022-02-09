@@ -2,12 +2,10 @@
 #include <gsl/gsl_util>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include <stdexcept>
-#include <string>
 
 namespace Y2KaoZ::Crypto::Random {
 
-auto SecureRandom::generatePublic(const std::size_t& bytes) -> BigInt {
+auto PublicSecureRandom(const std::size_t& bytes) -> Y2KaoZ::Numeric::BigInt::BigInt {
   if (bytes > std::numeric_limits<int>::max()) {
     throw std::length_error("The random number is too big for the underlying implementation.");
   }
@@ -18,7 +16,7 @@ auto SecureRandom::generatePublic(const std::size_t& bytes) -> BigInt {
   return Y2KaoZ::Numeric::BigInt::fromBuffer(buffer);
 }
 
-auto SecureRandom::generateSecret(const std::size_t& bytes) -> BigInt {
+auto SecretSecureRandom(const std::size_t& bytes) -> Y2KaoZ::Numeric::BigInt::BigInt {
   if (bytes > std::numeric_limits<int>::max()) {
     throw std::length_error("The random number is too big for the underlying implementation.");
   }
